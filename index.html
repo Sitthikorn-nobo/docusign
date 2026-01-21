@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบเซ็นเอกสาร - Google Apps Script</title>
+    <title>ระบบเซ็นเอกสาร</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; }
@@ -410,14 +411,19 @@
                             <label class="form-label">Type</label>
                             <select class="form-control" id="formType" onchange="updateFormType()">
                                 <option value="">เลือกประเภทฟอร์ม</option>
-                                <option value="form1">ฟอร์ม 1 - สัญญาไม่ปกปิด (1 ผู้เซ็น)</option>
-                                <option value="form2">ฟอร์ม 2 - สัญญารักษาความลับ (2 ผู้เซ็น)</option>
-                                <option value="form3">ฟอร์ม 3 - หนังสือสัญญา (3 ผู้เซ็น)</option>
+                                <option value="form1">Form 1 - Contract (1 person)</option>
+                                <option value="form2">Form 2 - NDA (2 people)</option>
+                                <option value="form3">Form 3 - Agreement (3 people)</option>
                             </select>
                         </div>
 
+                        <div class="form-group">
+                            <label class="form-label">Admin Email (อีเมลของคุณ - สำหรับรับแจ้งเตือนเมื่อเสร็จ)</label>
+                            <input type="email" class="form-control" id="adminEmail" placeholder="your-email@gmail.com">
+                        </div>
+
                         <div id="approverEmailsSection" style="display: none;">
-                            <h3 style="margin: 25px 0 15px; font-size: 16px;">อีเมลผู้กรอก/ผู้เซ็น</h3>
+                            <h3 style="margin: 25px 0 15px; font-size: 16px;">Signer Emails</h3>
                             <div id="emailInputs"></div>
                         </div>
 
@@ -433,7 +439,7 @@
             <!-- My Jobs Tab -->
             <div id="myjobsTab" class="admin-tab" style="display: none;">
                 <div class="header">
-                    <h1 style="font-size: 18px; font-weight: 500;">My Jobs - ติดตามสถานะ</h1>
+                    <h1 style="font-size: 18px; font-weight: 500;">My Jobs - Track Status</h1>
                 </div>
 
                 <div class="content-area">
@@ -442,17 +448,17 @@
                             <thead>
                                 <tr>
                                     <th>REF.</th>
-                                    <th>เอกสาร</th>
-                                    <th>วันที่สร้าง</th>
-                                    <th>ความคืบหน้า</th>
-                                    <th>สถานะ</th>
-                                    <th>ดำเนินการ</th>
+                                    <th>Document</th>
+                                    <th>Created</th>
+                                    <th>Progress</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody id="jobsTableBody">
                                 <tr>
                                     <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
-                                        ยังไม่มีเอกสาร
+                                        No documents yet
                                     </td>
                                 </tr>
                             </tbody>
@@ -467,58 +473,58 @@
     <div id="signingPage" class="page">
         <div class="signing-container">
             <div class="workflow-status">
-                <h2 style="margin-bottom: 20px;">📄 สถานะการอนุมัติเอกสาร</h2>
+                <h2 style="margin-bottom: 20px;">📄 Document Approval Status</h2>
                 <div id="workflowStatus"></div>
             </div>
 
             <div class="card">
-                <h2 style="margin-bottom: 20px;" id="signingTitle">กรุณากรอกข้อมูลและเซ็นชื่อ</h2>
+                <h2 style="margin-bottom: 20px;" id="signingTitle">Please fill in and sign</h2>
                 
                 <div class="info-box" id="signingInfo"></div>
 
                 <div id="formFieldsSection">
-                    <h3 style="margin-bottom: 20px; font-size: 16px;">กรอกข้อมูล</h3>
+                    <h3 style="margin-bottom: 20px; font-size: 16px;">Fill Information</h3>
                     
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 20px;">
                         <div class="form-group">
-                            <label class="form-label">ชื่อ-สกุล / Full Name</label>
-                            <input type="text" class="form-control" id="fullName" placeholder="เช่น สมชาย ใจดี">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="fullName" placeholder="e.g. John Doe">
                         </div>
                         
                         <div class="form-group">
-                            <label class="form-label">รหัสพนักงาน / Employee ID</label>
-                            <input type="text" class="form-control" id="employeeId" placeholder="เช่น EMP001">
+                            <label class="form-label">Employee ID</label>
+                            <input type="text" class="form-control" id="employeeId" placeholder="e.g. EMP001">
                         </div>
                         
                         <div class="form-group">
-                            <label class="form-label">แผนก/ฝ่าย / Department</label>
-                            <input type="text" class="form-control" id="department" placeholder="เช่น IT, HR">
+                            <label class="form-label">Department</label>
+                            <input type="text" class="form-control" id="department" placeholder="e.g. IT, HR">
                         </div>
                         
                         <div class="form-group">
-                            <label class="form-label">วันที่ / Date</label>
+                            <label class="form-label">Date</label>
                             <input type="date" class="form-control" id="documentDate">
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">หมายเหตุ / Note (ถ้ามี)</label>
-                        <textarea class="form-control" id="note" rows="3" placeholder="กรอกหมายเหตุเพิ่มเติม..."></textarea>
+                        <label class="form-label">Note (optional)</label>
+                        <textarea class="form-control" id="note" rows="3" placeholder="Additional notes..."></textarea>
                     </div>
                 </div>
 
                 <div style="margin: 30px 0;">
-                    <h3 style="margin-bottom: 20px; font-size: 16px;">ลายเซ็นของคุณ</h3>
+                    <h3 style="margin-bottom: 20px; font-size: 16px;">Your Signature</h3>
                     <div style="text-align: center;">
                         <canvas id="signatureCanvas" class="signature-pad" width="600" height="200"></canvas>
                         <button class="btn" style="background: #999; color: white; margin-top: 15px;" onclick="clearSignature()">
-                            🗑️ ล้างลายเซ็น
+                            🗑️ Clear Signature
                         </button>
                     </div>
                 </div>
 
                 <button class="btn btn-success" onclick="submitSignature()" id="submitBtn">
-                    ✓ ยืนยันและส่งต่อ
+                    ✓ Confirm and Submit
                 </button>
             </div>
         </div>
@@ -527,30 +533,27 @@
     <!-- Script Setup Modal -->
     <div class="modal" id="scriptSetupModal">
         <div class="modal-content">
-            <h2 style="margin-bottom: 20px;">⚙️ ตั้งค่า Google Apps Script</h2>
+            <h2 style="margin-bottom: 20px;">⚙️ Setup Google Apps Script</h2>
             
             <div class="alert" style="display: block; background: #fff3cd; color: #856404; border-left: 4px solid #ffc107;">
-                <strong>📖 วิธีตั้งค่า:</strong><br>
-                1. สร้าง Google Apps Script<br>
-                2. Deploy เป็น Web app<br>
-                3. Copy URL มาใส่ด้านล่าง
+                <strong>📖 How to setup:</strong><br>
+                1. Create Google Apps Script<br>
+                2. Deploy as Web app<br>
+                3. Paste URL below
             </div>
             
             <div class="form-group">
                 <label class="form-label">Apps Script URL</label>
                 <input type="text" class="form-control" id="scriptUrlInput" 
                        placeholder="https://script.google.com/macros/s/.../exec">
-                <small style="color: #666; font-size: 12px;">
-                    * URL ที่ได้จากการ Deploy Apps Script
-                </small>
             </div>
 
             <div style="display: flex; gap: 10px; margin-top: 25px;">
                 <button class="btn" style="flex: 1; background: #999; color: white;" onclick="closeScriptSetup()">
-                    ยกเลิก
+                    Cancel
                 </button>
                 <button class="btn btn-primary" style="flex: 2;" onclick="saveScriptConfig()">
-                    ✓ บันทึก
+                    ✓ Save
                 </button>
             </div>
         </div>
@@ -559,31 +562,27 @@
     <script>
         const { PDFDocument, rgb, StandardFonts } = PDFLib;
 
-        // Config
-        let scriptConfig = {
-            url: ''
-        };
-
+        let scriptConfig = { url: '' };
         const formConfigs = {
             form1: {
-                name: 'สัญญาไม่ปกปิด.pdf',
+                name: 'Contract.pdf',
                 approvers: [
-                    { name: 'ผู้สมัคร', role: 'ผู้เซ็นเอกสาร', email: '', needsFormFill: true, signPosition: { x: 350, y: 200 } }
+                    { name: 'Applicant', role: 'Signer', email: '', needsFormFill: true, signPosition: { x: 350, y: 200 } }
                 ]
             },
             form2: {
-                name: 'สัญญารักษาความลับ.pdf',
+                name: 'NDA.pdf',
                 approvers: [
-                    { name: 'ผู้สมัคร', role: 'ผู้เซ็นเอกสาร', email: '', needsFormFill: true, signPosition: { x: 350, y: 250 } },
-                    { name: 'HR Department', role: 'ผู้อนุมัติ', email: '', needsFormFill: false, signPosition: { x: 350, y: 150 } }
+                    { name: 'Applicant', role: 'Signer', email: '', needsFormFill: true, signPosition: { x: 350, y: 250 } },
+                    { name: 'HR', role: 'Approver', email: '', needsFormFill: false, signPosition: { x: 350, y: 150 } }
                 ]
             },
             form3: {
-                name: 'หนังสือสัญญา.pdf',
+                name: 'Agreement.pdf',
                 approvers: [
-                    { name: 'ผู้สมัคร', role: 'ผู้เซ็นเอกสาร', email: '', needsFormFill: true, signPosition: { x: 350, y: 300 } },
-                    { name: 'HR Department', role: 'ผู้อนุมัติระดับ 1', email: '', needsFormFill: false, signPosition: { x: 350, y: 200 } },
-                    { name: 'ผู้จัดการ', role: 'ผู้อนุมัติระดับ 2', email: '', needsFormFill: false, signPosition: { x: 350, y: 100 } }
+                    { name: 'Applicant', role: 'Signer', email: '', needsFormFill: true, signPosition: { x: 350, y: 300 } },
+                    { name: 'HR', role: 'Approver 1', email: '', needsFormFill: false, signPosition: { x: 350, y: 200 } },
+                    { name: 'Manager', role: 'Approver 2', email: '', needsFormFill: false, signPosition: { x: 350, y: 100 } }
                 ]
             }
         };
@@ -593,7 +592,6 @@
         let currentDocument = null;
         let currentSignerIndex = null;
 
-        // Initialize
         (function init() {
             loadScriptConfig();
             loadDocuments();
@@ -641,7 +639,6 @@
             }
         }
 
-        // Script Config
         function loadScriptConfig() {
             try {
                 const saved = localStorage.getItem('script_config');
@@ -656,10 +653,10 @@
         function updateScriptStatus() {
             const status = document.getElementById('scriptStatus');
             if (scriptConfig.url) {
-                status.textContent = '✓ พร้อมส่งอีเมล';
+                status.textContent = '✓ Ready';
                 status.style.color = '#4caf50';
             } else {
-                status.textContent = '⚠️ ยังไม่ตั้งค่า';
+                status.textContent = '⚠️ Not configured';
                 status.style.color = '#ff9800';
             }
         }
@@ -677,12 +674,12 @@
             const url = document.getElementById('scriptUrlInput').value.trim();
             
             if (!url) {
-                alert('กรุณาใส่ URL');
+                alert('Please enter URL');
                 return;
             }
 
             if (!url.includes('script.google.com')) {
-                alert('URL ไม่ถูกต้อง กรุณาใช้ URL จาก Google Apps Script');
+                alert('Invalid URL');
                 return;
             }
             
@@ -690,10 +687,9 @@
             localStorage.setItem('script_config', JSON.stringify(scriptConfig));
             closeScriptSetup();
             updateScriptStatus();
-            alert('✓ บันทึกการตั้งค่าสำเร็จ!');
+            alert('✓ Configuration saved!');
         }
 
-        // Form Type Update
         function updateFormType() {
             const formType = document.getElementById('formType').value;
             
@@ -715,7 +711,7 @@
                     </div>
                     <input type="email" 
                            class="form-control approver-email" 
-                           placeholder="อีเมล (Gmail หรือ Outlook)" 
+                           placeholder="Email (Gmail or Outlook)" 
                            data-index="${idx}"
                            required>
                 </div>
@@ -724,16 +720,22 @@
             document.getElementById('emailInputs').innerHTML = html;
         }
 
-        // Send Document
         async function sendDocument() {
             const formType = document.getElementById('formType').value;
+            const adminEmail = document.getElementById('adminEmail').value.trim();
+            
             if (!formType) {
-                showError('กรุณาเลือกประเภทฟอร์ม');
+                showError('Please select form type');
+                return;
+            }
+
+            if (!adminEmail) {
+                showError('Please enter your email');
                 return;
             }
 
             if (!scriptConfig.url) {
-                showError('⚠️ กรุณาตั้งค่า Google Apps Script URL ก่อน (คลิกปุ่ม "ตั้งค่า Script URL" ด้านบน)');
+                showError('⚠️ Please configure Google Apps Script URL');
                 return;
             }
 
@@ -741,7 +743,7 @@
             const emails = Array.from(emailInputs).map(input => input.value.trim());
             
             if (emails.some(email => !email)) {
-                showError('กรุณากรอกอีเมลให้ครบทุกคน');
+                showError('Please enter all emails');
                 return;
             }
 
@@ -762,6 +764,7 @@
                     type: formType,
                     name: config.name,
                     approvers: config.approvers,
+                    adminEmail: adminEmail,
                     currentStep: 0,
                     status: 'In Progress',
                     formData: null,
@@ -772,7 +775,6 @@
                 documents.push(newDoc);
                 await saveDocuments();
 
-                // Send email via Google Apps Script
                 const baseUrl = window.location.href.split('?')[0];
                 const signingLink = `${baseUrl}?doc=${docId}&signer=0`;
                 
@@ -784,7 +786,7 @@
                 });
 
                 document.getElementById('loadingDiv').classList.remove('show');
-                showSuccess(`✓ ส่งเอกสารสำเร็จ! อีเมลถูกส่งไปยัง ${emails[0]} แล้ว`);
+                showSuccess(`✓ Document sent! Email sent to ${emails[0]}`);
                 
                 setTimeout(() => {
                     resetForm();
@@ -793,7 +795,7 @@
 
             } catch (error) {
                 document.getElementById('loadingDiv').classList.remove('show');
-                showError('เกิดข้อผิดพลาด: ' + error.message);
+                showError('Error: ' + error.message);
                 console.error(error);
             }
         }
@@ -802,10 +804,8 @@
             try {
                 const response = await fetch(scriptConfig.url, {
                     method: 'POST',
-                    mode: 'no-cors', // Important for CORS
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         toEmail: toEmail,
                         toName: params.toName,
@@ -815,19 +815,18 @@
                     })
                 });
 
-                // Note: With no-cors, we can't read the response
-                // But if no error is thrown, we assume success
                 console.log('Email sent via Google Apps Script');
                 return { success: true };
                 
             } catch (error) {
                 console.error('Email error:', error);
-                throw new Error('ไม่สามารถส่งอีเมลได้ กรุณาตรวจสอบ Script URL');
+                throw new Error('Cannot send email');
             }
         }
 
         function resetForm() {
             document.getElementById('formType').value = '';
+            document.getElementById('adminEmail').value = '';
             updateFormType();
         }
 
@@ -835,21 +834,16 @@
             const alert = document.getElementById('successAlert');
             alert.textContent = message;
             alert.classList.add('show');
-            setTimeout(() => {
-                alert.classList.remove('show');
-            }, 5000);
+            setTimeout(() => alert.classList.remove('show'), 5000);
         }
 
         function showError(message) {
             const alert = document.getElementById('errorAlert');
             alert.textContent = message;
             alert.classList.add('show');
-            setTimeout(() => {
-                alert.classList.remove('show');
-            }, 5000);
+            setTimeout(() => alert.classList.remove('show'), 5000);
         }
 
-        // Jobs Table
         function renderJobsTable() {
             const tbody = document.getElementById('jobsTableBody');
             
@@ -857,7 +851,7 @@
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
-                            ยังไม่มีเอกสาร
+                            No documents yet
                         </td>
                     </tr>
                 `;
@@ -872,7 +866,7 @@
                     <tr>
                         <td><strong>${doc.id}</strong></td>
                         <td>${doc.name}</td>
-                        <td>${new Date(doc.createdAt).toLocaleString('th-TH', { 
+                        <td>${new Date(doc.createdAt).toLocaleString('en-US', { 
                             year: 'numeric', 
                             month: 'short', 
                             day: 'numeric',
@@ -883,16 +877,16 @@
                             <div class="progress-bar">
                                 <div class="progress-fill" style="width: ${progress}%"></div>
                             </div>
-                            <small style="color: #666;">${doc.currentStep} / ${doc.approvers.length} คน</small>
+                            <small style="color: #666;">${doc.currentStep} / ${doc.approvers.length} people</small>
                         </td>
                         <td><span class="status-badge ${statusClass}">${doc.status}</span></td>
                         <td>
                             ${doc.status === 'Completed' && doc.pdfData ? 
                                 `<button class="btn btn-primary" style="padding: 8px 16px; font-size: 13px;" onclick="downloadPDF('${doc.id}')">
-                                    📥 ดาวน์โหลด
+                                    📥 Download
                                 </button>` :
                                 `<button class="btn" style="padding: 8px 16px; font-size: 13px; background: #999; color: white;" onclick="viewStatus('${doc.id}')">
-                                    👁️ ดูสถานะ
+                                    👁️ View Status
                                 </button>`
                             }
                         </td>
@@ -905,17 +899,17 @@
             const doc = documents.find(d => d.id === docId);
             if (!doc) return;
 
-            let statusText = 'สถานะการเซ็น:\n\n';
+            let statusText = 'Signing Status:\n\n';
             doc.approvers.forEach((app, idx) => {
                 const icon = app.status === 'signed' ? '✓' : 
                             app.status === 'pending' ? '→' : '○';
                 statusText += `${icon} ${idx + 1}. ${app.name} (${app.role})\n`;
                 if (app.status === 'signed') {
-                    statusText += `   เซ็นเมื่อ: ${new Date(app.signedAt).toLocaleString('th-TH')}\n`;
+                    statusText += `   Signed: ${new Date(app.signedAt).toLocaleString()}\n`;
                 } else if (app.status === 'pending') {
-                    statusText += `   → กำลังรอการเซ็น\n`;
+                    statusText += `   → Waiting for signature\n`;
                 } else {
-                    statusText += `   รอการเซ็นจากคนก่อนหน้า\n`;
+                    statusText += `   Waiting for previous signer\n`;
                 }
                 statusText += '\n';
             });
@@ -937,29 +931,28 @@
                 a.click();
                 URL.revokeObjectURL(url);
             } catch (error) {
-                alert('เกิดข้อผิดพลาดในการดาวน์โหลด');
+                alert('Download error');
                 console.error(error);
             }
         }
 
-        // Signing Page
         function loadSigningPage(docId, signerIndex) {
             const doc = documents.find(d => d.id === docId);
             
             if (!doc) {
-                alert('ไม่พบเอกสาร');
+                alert('Document not found');
                 return;
             }
 
             const approver = doc.approvers[signerIndex];
             
             if (approver.status === 'signed') {
-                alert('คุณได้เซ็นเอกสารนี้แล้ว');
+                alert('You have already signed this document');
                 return;
             }
 
             if (approver.status === 'waiting') {
-                alert('ยังไม่ถึงคิวของคุณ กรุณารอให้ผู้อนุมัติคนก่อนหน้าเซ็นก่อน');
+                alert('Not your turn yet. Please wait for previous signer.');
                 return;
             }
 
@@ -968,7 +961,7 @@
 
             document.getElementById('signingTitle').textContent = `${approver.name} - ${approver.role}`;
             document.getElementById('signingInfo').innerHTML = `
-                คุณได้รับมอบหมายให้${approver.needsFormFill ? 'กรอกข้อมูลและ' : ''}เซ็นเอกสาร "<strong>${doc.name}</strong>"
+                You are assigned to ${approver.needsFormFill ? 'fill and ' : ''}sign document "<strong>${doc.name}</strong>"
             `;
 
             document.getElementById('formFieldsSection').style.display = 
@@ -994,8 +987,8 @@
                         <div style="font-size: 12px; color: #666;">${app.role}</div>
                     </div>
                     <div style="font-size: 12px; font-weight: 500;">
-                        ${app.status === 'signed' ? '✓ เซ็นแล้ว' : 
-                          idx === currentIndex ? '→ ถึงคิวคุณ' : '○ รอ'}
+                        ${app.status === 'signed' ? '✓ Signed' : 
+                          idx === currentIndex ? '→ Your turn' : '○ Waiting'}
                     </div>
                 </div>
             `).join('');
@@ -1003,7 +996,6 @@
             document.getElementById('workflowStatus').innerHTML = html;
         }
 
-        // Signature Pad Class
         class SignaturePad {
             constructor(canvas) {
                 this.canvas = canvas;
@@ -1083,10 +1075,9 @@
             }
         }
 
-        // Submit Signature
         async function submitSignature() {
             if (!signaturePad || signaturePad.isEmpty()) {
-                alert('กรุณาเซ็นชื่อก่อนยืนยัน');
+                alert('Please sign before confirming');
                 return;
             }
 
@@ -1096,7 +1087,7 @@
             if (approver.needsFormFill) {
                 const fullName = document.getElementById('fullName').value.trim();
                 if (!fullName) {
-                    alert('กรุณากรอกชื่อ-สกุล');
+                    alert('Please enter full name');
                     return;
                 }
                 
@@ -1147,21 +1138,59 @@
                         signingLink: signingLink
                     });
                     
-                    alert('✓ เซ็นเอกสารสำเร็จ! ระบบได้ส่งอีเมลแจ้งเตือนไปยังผู้อนุมัติคนถัดไปแล้ว');
+                    alert('✓ Signed successfully! Email sent to next approver.');
                 } catch (error) {
-                    alert('✓ เซ็นเอกสารสำเร็จ!\n(หมายเหตุ: ไม่สามารถส่งอีเมลได้ กรุณาตรวจสอบการตั้งค่า)');
+                    alert('✓ Signed successfully!\n(Note: Email sending failed)');
                 }
             } else {
                 currentDocument.status = 'Completed';
                 currentDocument.currentStep = currentDocument.approvers.length;
-                alert('✓ เอกสารได้รับการอนุมัติครบถ้วนแล้ว!\n\nผู้ส่งเอกสารสามารถดาวน์โหลด PDF ได้จากหน้า My Jobs');
+                
+                // Send completion email to admin
+                try {
+                    await sendCompletionEmail(currentDocument);
+                } catch (error) {
+                    console.error('Failed to send completion email:', error);
+                }
+                
+                alert('✓ Document completed!\n\nAdmin can download PDF from My Jobs page.');
             }
 
             await saveDocuments();
             
             setTimeout(() => {
-                alert('ขอบคุณสำหรับการเซ็นเอกสาร คุณสามารถปิดหน้านี้ได้');
+                alert('Thank you for signing. You can close this page.');
             }, 1000);
+        }
+
+        async function sendCompletionEmail(doc) {
+            if (!doc.adminEmail) return;
+            
+            const baseUrl = window.location.href.split('?')[0];
+            
+            try {
+                await fetch(scriptConfig.url, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        emailType: 'completion',
+                        toEmail: doc.adminEmail,
+                        toName: 'Admin',
+                        documentName: doc.name,
+                        docId: doc.id,
+                        downloadLink: baseUrl,
+                        signers: doc.approvers.map(a => ({
+                            name: a.name,
+                            role: a.role,
+                            signedAt: a.signedAt
+                        }))
+                    })
+                });
+                console.log('Completion email sent to admin');
+            } catch (error) {
+                console.error('Completion email error:', error);
+            }
         }
 
         async function createInitialPDF(doc) {
@@ -1260,13 +1289,15 @@
                 height: signatureDims.height
             });
 
+            const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
             const name = formData ? formData.fullName : approver.name;
-            const now = new Date().toLocaleString('th-TH');
+            const now = new Date().toLocaleString('en-US');
             
             firstPage.drawText(name, {
                 x: signPos.x,
                 y: signPos.y - 15,
                 size: 8,
+                font,
                 color: rgb(0.4, 0.4, 0.4)
             });
 
@@ -1274,6 +1305,7 @@
                 x: signPos.x,
                 y: signPos.y - 25,
                 size: 7,
+                font,
                 color: rgb(0.5, 0.5, 0.5)
             });
 
@@ -1281,7 +1313,6 @@
             return btoa(String.fromCharCode.apply(null, newBytes));
         }
 
-        // Storage
         async function saveDocuments() {
             try {
                 localStorage.setItem('signing_documents', JSON.stringify(documents));

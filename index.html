@@ -3,14 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบเซ็นเอกสาร - Admin & Signing Portal</title>
+    <title>ระบบเซ็นเอกสาร - Google Apps Script</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; }
         
-        /* Sidebar */
         .sidebar {
             position: fixed;
             left: 0;
@@ -54,19 +52,38 @@
         .menu-item:hover { background: rgba(255,255,255,0.1); }
         .menu-item.active { background: #ff9800; border-left: 4px solid #f57c00; }
         
-        /* Main Content */
         .main-content {
             margin-left: 200px;
             min-height: 100vh;
+        }
+        
+        .config-banner {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 40px;
+            text-align: center;
+        }
+
+        .config-btn {
+            background: rgba(255,255,255,0.3);
+            border: 2px solid white;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            margin-left: 15px;
+            font-size: 13px;
+        }
+
+        .config-btn:hover {
+            background: white;
+            color: #667eea;
         }
         
         .header {
             background: white;
             padding: 20px 40px;
             border-bottom: 1px solid #e0e0e0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
         }
         
         .content-area { padding: 30px 40px; }
@@ -148,7 +165,84 @@
             transform: none;
         }
         
-        /* Table */
+        .email-input-group {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .alert {
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .alert.show { display: block; }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .loading.show { display: block; }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3949ab;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .modal.active { display: flex; }
+        
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
         .table-container {
             background: white;
             border-radius: 12px;
@@ -191,23 +285,30 @@
             font-weight: 500;
         }
         
-        .status-new { background: #e3f2fd; color: #1976d2; }
         .status-inprogress { background: #fff3e0; color: #f57c00; }
         .status-completed { background: #e8f5e9; color: #2e7d32; }
         
-        /* Signing Page */
+        .progress-bar {
+            background: #e0e0e0;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .progress-fill {
+            background: #4caf50;
+            height: 100%;
+            transition: width 0.3s;
+        }
+
+        .page { display: none; }
+        .page.active { display: block; }
+
         .signing-container {
             max-width: 900px;
             margin: 50px auto;
             padding: 20px;
-        }
-        
-        .pdf-viewer {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         
         .signature-pad {
@@ -250,136 +351,27 @@
             background: #fafafa;
             border-left: 4px solid #ddd;
         }
-        
-        .page { display: none; }
-        .page.active { display: block; }
-        
-        .alert {
-            padding: 16px 20px;
-            border-radius: 8px;
+
+        .info-box {
+            background: #e3f2fd;
+            padding: 15px 20px;
+            border-radius: 6px;
             margin-bottom: 20px;
-            display: none;
-        }
-        
-        .alert.show { display: block; }
-        
-        .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border-left: 4px solid #28a745;
-        }
-        
-        .alert-info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border-left: 4px solid #17a2b8;
-        }
-        
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 30px;
-        }
-        
-        .loading.show { display: block; }
-        
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3949ab;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .email-input-group {
-            display: grid;
-            grid-template-columns: auto 1fr;
-            gap: 12px;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .progress-bar {
-            background: #e0e0e0;
-            height: 8px;
-            border-radius: 4px;
-            overflow: hidden;
-            margin-bottom: 10px;
-        }
-        
-        .progress-fill {
-            background: #4caf50;
-            height: 100%;
-            transition: width 0.3s;
-        }
-        
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.7);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        
-        .modal.active { display: flex; }
-        
-        .modal-content {
-            background: white;
-            padding: 40px;
-            border-radius: 16px;
-            max-width: 600px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .config-banner {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px 40px;
-            text-align: center;
-        }
-
-        .config-btn {
-            background: rgba(255,255,255,0.3);
-            border: 2px solid white;
-            color: white;
-            padding: 8px 20px;
-            border-radius: 20px;
-            cursor: pointer;
-            margin-left: 15px;
+            border-left: 4px solid #3949ab;
             font-size: 13px;
-        }
-
-        .config-btn:hover {
-            background: white;
-            color: #667eea;
+            color: #1565c0;
         }
     </style>
 </head>
 <body>
-    <!-- Config Banner (Show only on admin page) -->
-    <div id="configBanner" class="config-banner" style="display: none;">
-        <span>ระบบส่งอีเมล: <span id="emailStatus">ยังไม่ตั้งค่า</span></span>
-        <button class="config-btn" onclick="openEmailSetup()">⚙️ ตั้งค่า EmailJS</button>
+    <!-- Config Banner -->
+    <div id="configBanner" class="config-banner">
+        <span>Google Apps Script: <span id="scriptStatus">⚠️ ยังไม่ตั้งค่า</span></span>
+        <button class="config-btn" onclick="openScriptSetup()">⚙️ ตั้งค่า Script URL</button>
     </div>
 
     <!-- ADMIN PAGE -->
-    <div id="adminPage" class="page">
-        <!-- Sidebar -->
+    <div id="adminPage" class="page active">
         <div class="sidebar">
             <div class="logo">
                 <div class="logo-icon">👤</div>
@@ -396,7 +388,6 @@
             </div>
         </div>
 
-        <!-- Main Content -->
         <div class="main-content">
             <!-- Request Tab -->
             <div id="requestTab" class="admin-tab">
@@ -406,6 +397,7 @@
 
                 <div class="content-area">
                     <div class="alert alert-success" id="successAlert"></div>
+                    <div class="alert alert-error" id="errorAlert"></div>
                     <div class="loading" id="loadingDiv">
                         <div class="spinner"></div>
                         <div>กำลังส่งอีเมล...</div>
@@ -482,9 +474,8 @@
             <div class="card">
                 <h2 style="margin-bottom: 20px;" id="signingTitle">กรุณากรอกข้อมูลและเซ็นชื่อ</h2>
                 
-                <div class="alert alert-info show" id="signingInfo"></div>
+                <div class="info-box" id="signingInfo"></div>
 
-                <!-- Form Fields -->
                 <div id="formFieldsSection">
                     <h3 style="margin-bottom: 20px; font-size: 16px;">กรอกข้อมูล</h3>
                     
@@ -516,7 +507,6 @@
                     </div>
                 </div>
 
-                <!-- Signature -->
                 <div style="margin: 30px 0;">
                     <h3 style="margin-bottom: 20px; font-size: 16px;">ลายเซ็นของคุณ</h3>
                     <div style="text-align: center;">
@@ -534,39 +524,32 @@
         </div>
     </div>
 
-    <!-- Email Setup Modal -->
-    <div class="modal" id="emailSetupModal">
+    <!-- Script Setup Modal -->
+    <div class="modal" id="scriptSetupModal">
         <div class="modal-content">
-            <h2 style="margin-bottom: 20px;">⚙️ ตั้งค่า EmailJS</h2>
+            <h2 style="margin-bottom: 20px;">⚙️ ตั้งค่า Google Apps Script</h2>
             
-            <div class="alert alert-info show">
+            <div class="alert" style="display: block; background: #fff3cd; color: #856404; border-left: 4px solid #ffc107;">
                 <strong>📖 วิธีตั้งค่า:</strong><br>
-                1. สมัครฟรีที่ <a href="https://www.emailjs.com" target="_blank">EmailJS.com</a><br>
-                2. เพิ่ม Email Service (Gmail/Outlook)<br>
-                3. สร้าง Template<br>
-                4. นำ Keys มาใส่ด้านล่าง
+                1. สร้าง Google Apps Script<br>
+                2. Deploy เป็น Web app<br>
+                3. Copy URL มาใส่ด้านล่าง
             </div>
             
             <div class="form-group">
-                <label class="form-label">Public Key</label>
-                <input type="text" class="form-control" id="publicKeyInput" placeholder="abcd1234efgh5678">
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Service ID</label>
-                <input type="text" class="form-control" id="serviceIdInput" placeholder="service_abc123">
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Template ID</label>
-                <input type="text" class="form-control" id="templateIdInput" placeholder="template_xyz789">
+                <label class="form-label">Apps Script URL</label>
+                <input type="text" class="form-control" id="scriptUrlInput" 
+                       placeholder="https://script.google.com/macros/s/.../exec">
+                <small style="color: #666; font-size: 12px;">
+                    * URL ที่ได้จากการ Deploy Apps Script
+                </small>
             </div>
 
             <div style="display: flex; gap: 10px; margin-top: 25px;">
-                <button class="btn" style="flex: 1; background: #999; color: white;" onclick="closeEmailSetup()">
+                <button class="btn" style="flex: 1; background: #999; color: white;" onclick="closeScriptSetup()">
                     ยกเลิก
                 </button>
-                <button class="btn btn-primary" style="flex: 2;" onclick="saveEmailConfig()">
+                <button class="btn btn-primary" style="flex: 2;" onclick="saveScriptConfig()">
                     ✓ บันทึก
                 </button>
             </div>
@@ -576,11 +559,9 @@
     <script>
         const { PDFDocument, rgb, StandardFonts } = PDFLib;
 
-        // Email Config
-        let emailConfig = {
-            publicKey: '',
-            serviceId: '',
-            templateId: ''
+        // Config
+        let scriptConfig = {
+            url: ''
         };
 
         const formConfigs = {
@@ -614,7 +595,7 @@
 
         // Initialize
         (function init() {
-            loadEmailConfig();
+            loadScriptConfig();
             loadDocuments();
             checkPageType();
         })();
@@ -625,10 +606,8 @@
             const signerIndex = params.get('signer');
 
             if (docId && signerIndex !== null) {
-                // Signing page
                 showSigningPage(docId, parseInt(signerIndex));
             } else {
-                // Admin page
                 showAdminPage();
             }
         }
@@ -637,7 +616,7 @@
             document.getElementById('adminPage').classList.add('active');
             document.getElementById('signingPage').classList.remove('active');
             document.getElementById('configBanner').style.display = 'block';
-            updateEmailStatus();
+            updateScriptStatus();
         }
 
         function showSigningPage(docId, signerIndex) {
@@ -662,24 +641,21 @@
             }
         }
 
-        // Email Config
-        function loadEmailConfig() {
+        // Script Config
+        function loadScriptConfig() {
             try {
-                const saved = localStorage.getItem('emailjs_config');
+                const saved = localStorage.getItem('script_config');
                 if (saved) {
-                    emailConfig = JSON.parse(saved);
-                    if (emailConfig.publicKey) {
-                        emailjs.init(emailConfig.publicKey);
-                    }
+                    scriptConfig = JSON.parse(saved);
                 }
             } catch (error) {
                 console.error('Error loading config:', error);
             }
         }
 
-        function updateEmailStatus() {
-            const status = document.getElementById('emailStatus');
-            if (emailConfig.publicKey && emailConfig.serviceId && emailConfig.templateId) {
+        function updateScriptStatus() {
+            const status = document.getElementById('scriptStatus');
+            if (scriptConfig.url) {
                 status.textContent = '✓ พร้อมส่งอีเมล';
                 status.style.color = '#4caf50';
             } else {
@@ -688,32 +664,32 @@
             }
         }
 
-        function openEmailSetup() {
-            document.getElementById('emailSetupModal').classList.add('active');
-            document.getElementById('publicKeyInput').value = emailConfig.publicKey || '';
-            document.getElementById('serviceIdInput').value = emailConfig.serviceId || '';
-            document.getElementById('templateIdInput').value = emailConfig.templateId || '';
+        function openScriptSetup() {
+            document.getElementById('scriptSetupModal').classList.add('active');
+            document.getElementById('scriptUrlInput').value = scriptConfig.url || '';
         }
 
-        function closeEmailSetup() {
-            document.getElementById('emailSetupModal').classList.remove('active');
+        function closeScriptSetup() {
+            document.getElementById('scriptSetupModal').classList.remove('active');
         }
 
-        function saveEmailConfig() {
-            const publicKey = document.getElementById('publicKeyInput').value.trim();
-            const serviceId = document.getElementById('serviceIdInput').value.trim();
-            const templateId = document.getElementById('templateIdInput').value.trim();
+        function saveScriptConfig() {
+            const url = document.getElementById('scriptUrlInput').value.trim();
             
-            if (!publicKey || !serviceId || !templateId) {
-                alert('กรุณากรอกข้อมูลให้ครบทุกช่อง');
+            if (!url) {
+                alert('กรุณาใส่ URL');
+                return;
+            }
+
+            if (!url.includes('script.google.com')) {
+                alert('URL ไม่ถูกต้อง กรุณาใช้ URL จาก Google Apps Script');
                 return;
             }
             
-            emailConfig = { publicKey, serviceId, templateId };
-            localStorage.setItem('emailjs_config', JSON.stringify(emailConfig));
-            emailjs.init(publicKey);
-            closeEmailSetup();
-            updateEmailStatus();
+            scriptConfig.url = url;
+            localStorage.setItem('script_config', JSON.stringify(scriptConfig));
+            closeScriptSetup();
+            updateScriptStatus();
             alert('✓ บันทึกการตั้งค่าสำเร็จ!');
         }
 
@@ -752,12 +728,12 @@
         async function sendDocument() {
             const formType = document.getElementById('formType').value;
             if (!formType) {
-                alert('กรุณาเลือกประเภทฟอร์ม');
+                showError('กรุณาเลือกประเภทฟอร์ม');
                 return;
             }
 
-            if (!emailConfig.publicKey || !emailConfig.serviceId || !emailConfig.templateId) {
-                alert('⚠️ กรุณาตั้งค่า EmailJS ก่อน (คลิกปุ่ม "ตั้งค่า EmailJS" ด้านบน)');
+            if (!scriptConfig.url) {
+                showError('⚠️ กรุณาตั้งค่า Google Apps Script URL ก่อน (คลิกปุ่ม "ตั้งค่า Script URL" ด้านบน)');
                 return;
             }
 
@@ -765,7 +741,7 @@
             const emails = Array.from(emailInputs).map(input => input.value.trim());
             
             if (emails.some(email => !email)) {
-                alert('กรุณากรอกอีเมลให้ครบทุกคน');
+                showError('กรุณากรอกอีเมลให้ครบทุกคน');
                 return;
             }
 
@@ -796,60 +772,81 @@
                 documents.push(newDoc);
                 await saveDocuments();
 
-                // Send email to first approver
+                // Send email via Google Apps Script
                 const baseUrl = window.location.href.split('?')[0];
                 const signingLink = `${baseUrl}?doc=${docId}&signer=0`;
                 
-                await sendEmail(emails[0], {
-                    to_name: config.approvers[0].name,
-                    document_name: config.name,
+                await sendEmailViaScript(emails[0], {
+                    toName: config.approvers[0].name,
+                    documentName: config.name,
                     role: config.approvers[0].role,
-                    signing_link: signingLink
+                    signingLink: signingLink
                 });
 
                 document.getElementById('loadingDiv').classList.remove('show');
-                
-                const alert = document.getElementById('successAlert');
-                alert.textContent = `✓ ส่งเอกสารสำเร็จ! อีเมลถูกส่งไปยัง ${emails[0]} แล้ว`;
-                alert.classList.add('show');
+                showSuccess(`✓ ส่งเอกสารสำเร็จ! อีเมลถูกส่งไปยัง ${emails[0]} แล้ว`);
                 
                 setTimeout(() => {
-                    alert.classList.remove('show');
                     resetForm();
                     showAdminTab('myjobs');
                 }, 3000);
 
             } catch (error) {
                 document.getElementById('loadingDiv').classList.remove('show');
-                alert('เกิดข้อผิดพลาด: ' + error.message);
+                showError('เกิดข้อผิดพลาด: ' + error.message);
                 console.error(error);
             }
         }
 
-        async function sendEmail(to, params) {
+        async function sendEmailViaScript(toEmail, params) {
             try {
-                const response = await emailjs.send(
-                    emailConfig.serviceId,
-                    emailConfig.templateId,
-                    {
-                        to_email: to,
-                        to_name: params.to_name,
-                        document_name: params.document_name,
+                const response = await fetch(scriptConfig.url, {
+                    method: 'POST',
+                    mode: 'no-cors', // Important for CORS
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        toEmail: toEmail,
+                        toName: params.toName,
+                        documentName: params.documentName,
                         role: params.role,
-                        signing_link: params.signing_link,
-                        from_name: 'ระบบเซ็นเอกสาร'
-                    }
-                );
-                return response;
+                        signingLink: params.signingLink
+                    })
+                });
+
+                // Note: With no-cors, we can't read the response
+                // But if no error is thrown, we assume success
+                console.log('Email sent via Google Apps Script');
+                return { success: true };
+                
             } catch (error) {
                 console.error('Email error:', error);
-                throw error;
+                throw new Error('ไม่สามารถส่งอีเมลได้ กรุณาตรวจสอบ Script URL');
             }
         }
 
         function resetForm() {
             document.getElementById('formType').value = '';
             updateFormType();
+        }
+
+        function showSuccess(message) {
+            const alert = document.getElementById('successAlert');
+            alert.textContent = message;
+            alert.classList.add('show');
+            setTimeout(() => {
+                alert.classList.remove('show');
+            }, 5000);
+        }
+
+        function showError(message) {
+            const alert = document.getElementById('errorAlert');
+            alert.textContent = message;
+            alert.classList.add('show');
+            setTimeout(() => {
+                alert.classList.remove('show');
+            }, 5000);
         }
 
         // Jobs Table
@@ -869,8 +866,7 @@
 
             tbody.innerHTML = documents.map(doc => {
                 const progress = Math.round((doc.currentStep / doc.approvers.length) * 100);
-                const statusClass = doc.status === 'Completed' ? 'status-completed' : 
-                                  doc.status === 'In Progress' ? 'status-inprogress' : 'status-new';
+                const statusClass = doc.status === 'Completed' ? 'status-completed' : 'status-inprogress';
                 
                 return `
                     <tr>
@@ -970,24 +966,19 @@
             currentDocument = doc;
             currentSignerIndex = signerIndex;
 
-            // Setup page
             document.getElementById('signingTitle').textContent = `${approver.name} - ${approver.role}`;
             document.getElementById('signingInfo').innerHTML = `
                 คุณได้รับมอบหมายให้${approver.needsFormFill ? 'กรอกข้อมูลและ' : ''}เซ็นเอกสาร "<strong>${doc.name}</strong>"
             `;
 
-            // Show/hide form fields
             document.getElementById('formFieldsSection').style.display = 
                 approver.needsFormFill ? 'block' : 'none';
 
-            // Set today's date
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('documentDate').value = today;
 
-            // Show workflow
             showWorkflowStatus(doc, signerIndex);
 
-            // Init signature pad
             setTimeout(() => {
                 const canvas = document.getElementById('signatureCanvas');
                 signaturePad = new SignaturePad(canvas);
@@ -1101,7 +1092,6 @@
 
             const approver = currentDocument.approvers[currentSignerIndex];
             
-            // Get form data (if needed)
             let formData = null;
             if (approver.needsFormFill) {
                 const fullName = document.getElementById('fullName').value.trim();
@@ -1121,7 +1111,6 @@
 
             const signature = signaturePad.getDataURL();
 
-            // Update document
             approver.signature = signature;
             approver.status = 'signed';
             approver.signedAt = new Date().toISOString();
@@ -1130,7 +1119,6 @@
                 currentDocument.formData = formData;
             }
 
-            // Create/Update PDF
             if (!currentDocument.pdfData) {
                 currentDocument.pdfData = await createInitialPDF(currentDocument);
             }
@@ -1143,30 +1131,27 @@
                 formData
             );
 
-            // Move to next step or complete
             if (currentSignerIndex < currentDocument.approvers.length - 1) {
                 currentDocument.currentStep++;
                 currentDocument.approvers[currentSignerIndex + 1].status = 'pending';
                 
-                // Send email to next approver
                 const nextApprover = currentDocument.approvers[currentSignerIndex + 1];
                 const baseUrl = window.location.href.split('?')[0];
                 const signingLink = `${baseUrl}?doc=${currentDocument.id}&signer=${currentSignerIndex + 1}`;
                 
                 try {
-                    await sendEmail(nextApprover.email, {
-                        to_name: nextApprover.name,
-                        document_name: currentDocument.name,
+                    await sendEmailViaScript(nextApprover.email, {
+                        toName: nextApprover.name,
+                        documentName: currentDocument.name,
                         role: nextApprover.role,
-                        signing_link: signingLink
+                        signingLink: signingLink
                     });
                     
                     alert('✓ เซ็นเอกสารสำเร็จ! ระบบได้ส่งอีเมลแจ้งเตือนไปยังผู้อนุมัติคนถัดไปแล้ว');
                 } catch (error) {
-                    alert('✓ เซ็นเอกสารสำเร็จ!\n(หมายเหตุ: ไม่สามารถส่งอีเมลได้ กรุณาตรวจสอบการตั้งค่า EmailJS)');
+                    alert('✓ เซ็นเอกสารสำเร็จ!\n(หมายเหตุ: ไม่สามารถส่งอีเมลได้ กรุณาตรวจสอบการตั้งค่า)');
                 }
             } else {
-                // Completed
                 currentDocument.status = 'Completed';
                 currentDocument.currentStep = currentDocument.approvers.length;
                 alert('✓ เอกสารได้รับการอนุมัติครบถ้วนแล้ว!\n\nผู้ส่งเอกสารสามารถดาวน์โหลด PDF ได้จากหน้า My Jobs');
@@ -1174,7 +1159,6 @@
 
             await saveDocuments();
             
-            // Redirect to thank you
             setTimeout(() => {
                 alert('ขอบคุณสำหรับการเซ็นเอกสาร คุณสามารถปิดหน้านี้ได้');
             }, 1000);
@@ -1186,7 +1170,6 @@
             const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
             const { width, height } = page.getSize();
 
-            // Header
             page.drawRectangle({
                 x: 0,
                 y: height - 80,
@@ -1203,7 +1186,6 @@
                 color: rgb(1, 1, 1)
             });
 
-            // Form data (if exists)
             if (doc.formData) {
                 let yPos = height - 130;
                 const fields = [
@@ -1226,7 +1208,6 @@
                 });
             }
 
-            // Signature areas
             let yPos = 300;
             doc.approvers.forEach((app, idx) => {
                 page.drawRectangle({
